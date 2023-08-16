@@ -1,0 +1,34 @@
+plugins {
+    id 'java'
+}
+
+project.ext.lwjglVersion = "3.3.2"
+project.ext.lwjglNatives = "natives-windows"
+
+group = 'org.nvgu'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+    testImplementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+
+    List<String> libraries = [
+            "org.lwjgl:lwjgl",
+            "org.lwjgl:lwjgl-glfw",
+            "org.lwjgl:lwjgl-nanovg",
+            "org.lwjgl:lwjgl-opengl",
+            "org.lwjgl:lwjgl::$lwjglNatives",
+            "org.lwjgl:lwjgl-nanovg::$lwjglNatives",
+            "org.lwjgl:lwjgl-opengl::$lwjglNatives"
+    ]
+
+    libraries.forEach { library ->
+        implementation(library)
+        testImplementation(library)
+    }
+
+}
