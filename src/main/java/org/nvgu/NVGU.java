@@ -174,6 +174,71 @@ public class NVGU {
     }
 
     /**
+     * Basic solid-coloured rounded rectangle.
+     * @param bounds bounds of the rectangle
+     * @param topLeft radius of the top left corner
+     * @param topRight radius of the top right corner
+     * @param bottomRight radius of the bottom right corner
+     * @param bottomLeft radius of the bottom left corner
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangle(Rectangle bounds, float topLeft, float topRight, float bottomRight, float bottomLeft, Color colour) {
+        return roundedRectangle((float) bounds.getX(), (float) bounds.getY(), (float) bounds.getWidth(), (float) bounds.getHeight(), topLeft, topRight, bottomRight, bottomLeft, colour);
+    }
+
+    /**
+     * Basic solid-coloured rounded rectangle.
+     * @param bounds bounds of the rectangle
+     * @param radius radius of the rounded rectangle
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangle(Rectangle bounds, float radius, Color colour) {
+        return roundedRectangle((float) bounds.getX(), (float) bounds.getY(), (float) bounds.getWidth(), (float) bounds.getHeight(), radius, colour);
+    }
+
+    /**
+     * Basic solid-coloured rounded rectangle.
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param radius radius of the rounded rectangle
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangle(float x, float y, float width, float height, float radius, Color colour) {
+        return roundedRectangle(x, y, width, height, radius, radius, radius, radius, colour);
+    }
+
+    /**
+     * Basic solid-coloured rounded rectangle.
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param topLeft radius of the top left corner
+     * @param topRight radius of the top right corner
+     * @param bottomRight radius of the bottom right corner
+     * @param bottomLeft radius of the bottom left corner
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangle(float x, float y, float width, float height, float topLeft, float topRight, float bottomRight, float bottomLeft, Color colour) {
+        nvgBeginPath(handle);
+
+        nvgRoundedRectVarying(handle, x, y, width, height, topLeft, topRight, bottomRight, bottomLeft);
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.FILL);
+        } else {
+            nvgFillColor(handle, createAndStoreColour(colour));
+            nvgFill(handle);
+        }
+
+        nvgClosePath(handle);
+
+        return this;
+    }
+
+    /**
      * Basic solid-coloured circle.
      * @param x centre x coordinate of the circle
      * @param y centre y coordinate of the circle
@@ -184,8 +249,13 @@ public class NVGU {
         nvgBeginPath(handle);
 
         nvgCircle(handle, x, y, radius);
-        nvgFillColor(handle, createAndStoreColour(colour));
-        nvgFill(handle);
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.FILL);
+        } else {
+            nvgFillColor(handle, createAndStoreColour(colour));
+            nvgFill(handle);
+        }
 
         nvgClosePath(handle);
 
@@ -205,8 +275,13 @@ public class NVGU {
 
         nvgCircle(handle, x, y, radius);
         nvgStrokeWidth(handle, thickness);
-        nvgStrokeColor(handle, createAndStoreColour(colour));
-        nvgStroke(handle);
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.STROKE);
+        } else {
+            nvgStrokeColor(handle, createAndStoreColour(colour));
+            nvgStroke(handle);
+        }
 
         nvgClosePath(handle);
 
@@ -437,6 +512,10 @@ public class NVGU {
         return this;
     }
 
+    /**
+     * Gets the handle of the NanoVG instance.
+     * @return the handle of the NanoVG instance
+     */
     public long getHandle() {
         return handle;
     }
