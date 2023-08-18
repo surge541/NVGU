@@ -17,6 +17,21 @@ public class Window {
     // The window handle
     private long window;
 
+    private String title;
+    private int width;
+    private int height;
+    private boolean hideTitleBar;
+
+    private float mouseX;
+    private float mouseY;
+
+    public Window(String title, int width, int height, boolean hideTitleBar) {
+        this.title = title;
+        this.width = width;
+        this.height = height;
+        this.hideTitleBar = hideTitleBar;
+    }
+
     public void run(Runnable init, Runnable render) {
         init();
         loop(init, render);
@@ -28,6 +43,11 @@ public class Window {
         // Terminate GLFW and free the error callback
         glfwTerminate();
         glfwSetErrorCallback(null).free();
+    }
+
+    private void setMousePos(float x, float y) {
+        this.mouseX = x;
+        this.mouseY = y;
     }
 
     private void init() {
@@ -44,13 +64,19 @@ public class Window {
         glfwDefaultWindowHints(); // optional, the current window hints are already the default
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
+        glfwWindowHint(GLFW_DECORATED, this.hideTitleBar ? GLFW_FALSE : GLFW_TRUE);
+        glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
         // Create the window
-        window = glfwCreateWindow(600, 300, "NVGU Testing", NULL, NULL);
+        window = glfwCreateWindow(width, height, title, NULL, NULL);
 
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
+
+        glfwSetCursorPosCallback(window, (handle, xpos, ypos) -> {
+            setMousePos((float) xpos, (float) ypos);
+        });
 
         // Setup a key callback. It will be called every time a key is pressed, repeated or released.
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
@@ -111,6 +137,26 @@ public class Window {
             glfwSwapBuffers(window);
             glfwPollEvents();
         }
+    }
+
+    public long getWindow() {
+        return window;
+    }
+
+    public float getMouseX() {
+        return mouseX;
+    }
+
+    public float getMouseY() {
+        return mouseY;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 
 }

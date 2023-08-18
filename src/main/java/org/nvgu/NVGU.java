@@ -5,9 +5,7 @@ import org.lwjgl.nanovg.NVGColor;
 import org.lwjgl.nanovg.NVGPaint;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
-import org.nvgu.util.LinearGradientDirection;
-import org.nvgu.util.NVGUColour;
-import org.nvgu.util.Alignment;
+import org.nvgu.util.*;
 
 import java.awt.*;
 import java.io.IOException;
@@ -16,7 +14,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.lwjgl.nanovg.NanoVGGL3.*;
 import static org.lwjgl.nanovg.NanoVG.*;
@@ -31,6 +31,11 @@ public class NVGU {
     private int currentFontSize = -1;
     private Alignment alignment = Alignment.LEFT_TOP;
 
+    private final Map<String, Integer> textures = new HashMap<>();
+
+    /**
+     * Creates the instance of NanoVG
+     */
     public NVGU create() {
         if (handle == -1) {
             this.handle = nvgCreate(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
@@ -50,9 +55,34 @@ public class NVGU {
     }
 
     /**
+     * Creates a texture.
+     * @param identifier what identifier will be used to draw the texture
+     * @param texture the input stream of the texture
+     */
+    public NVGU createTexture(String identifier, InputStream texture) {
+        return createTexture(identifier, texture, NVG_IMAGE_NEAREST);
+    }
+
+    /**
+     * Creates a texture.
+     * @param identifier what identifier will be used to draw the texture
+     * @param texture the input stream of the texture
+     * @param flags any additional flags you want
+     */
+    public NVGU createTexture(String identifier, InputStream texture, int flags) {
+        if (!textures.containsKey(identifier)) {
+            textures.put(identifier, nvgCreateImageMem(handle, flags, getBytes(texture, 512)));
+        }
+
+        return this;
+    }
+
+    /**
      * Destroys the instance of NanoVG
      */
     public void destroy() {
+        textures.forEach((identifier, imageHandle) -> nvgDeleteImage(handle, imageHandle));
+
         nvgDelete(handle);
         handle = -1;
     }
@@ -126,7 +156,7 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured rectangle.
+     * Basic coloured rectangle.
      * @param rectangle bounds of the rectangle
      * @param colour colour of the rectangle
      */
@@ -135,7 +165,7 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured rectangle.
+     * Basic coloured rectangle.
      * @param x left coordinate
      * @param y top coordinate
      * @param width width of the rectangle
@@ -160,16 +190,16 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured rectangle border.
+     * Basic coloured rectangle border.
      * @param rectangle bounds of the rectangle
      * @param colour colour of the rectangle
      */
-    public NVGU rectangleBorder(Rectangle rectangle, float thickness, Color colour) {
-        return rectangleBorder((float) rectangle.getX(), (float) rectangle.getY(), (float) rectangle.getWidth(), (float) rectangle.getHeight(), thickness, colour);
+    public NVGU rectangleBorder(Rectangle rectangle, float thickness, Color colour, Border border) {
+        return rectangleBorder((float) rectangle.getX(), (float) rectangle.getY(), (float) rectangle.getWidth(), (float) rectangle.getHeight(), thickness, colour, border);
     }
 
     /**
-     * Basic solid-coloured rectangle border.
+     * Basic coloured rectangle border.
      * @param x left coordinate
      * @param y top coordinate
      * @param width width of the rectangle
@@ -177,8 +207,26 @@ public class NVGU {
      * @param thickness thickness of the border
      * @param colour colour of the rectangle
      */
-    public NVGU rectangleBorder(float x, float y, float width, float height, float thickness, Color colour) {
+    public NVGU rectangleBorder(float x, float y, float width, float height, float thickness, Color colour, Border border) {
         nvgBeginPath(handle);
+
+        switch (border) {
+            case INSIDE: {
+                x += thickness / 2f;
+                y += thickness / 2f;
+                width -= thickness;
+                height -= thickness;
+                break;
+            }
+
+            case OUTSIDE: {
+                x -= thickness / 2f;
+                y -= thickness / 2f;
+                width += thickness;
+                height += thickness;
+                break;
+            }
+        }
 
         nvgRect(handle, x, y, width, height);
         nvgStrokeWidth(handle, thickness);
@@ -196,7 +244,7 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured rounded rectangle.
+     * Basic coloured rounded rectangle.
      * @param bounds bounds of the rectangle
      * @param topLeft radius of the top left corner
      * @param topRight radius of the top right corner
@@ -209,7 +257,7 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured rounded rectangle.
+     * Basic coloured rounded rectangle.
      * @param bounds bounds of the rectangle
      * @param radius radius of the rounded rectangle
      * @param colour colour of the rounded rectangle
@@ -219,7 +267,7 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured rounded rectangle.
+     * Basic coloured rounded rectangle.
      * @param x left coordinate
      * @param y top coordinate
      * @param width width of the rectangle
@@ -232,7 +280,7 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured rounded rectangle.
+     * Basic coloured rounded rectangle.
      * @param x left coordinate
      * @param y top coordinate
      * @param width width of the rectangle
@@ -261,7 +309,96 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured circle.
+     * Basic coloured rounded rectangle border.
+     * @param bounds bounds of the rectangle
+     * @param topLeft radius of the top left corner
+     * @param topRight radius of the top right corner
+     * @param bottomRight radius of the bottom right corner
+     * @param bottomLeft radius of the bottom left corner
+     * @param thickness the thickness of the border
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangleBorder(Rectangle bounds, float topLeft, float topRight, float bottomRight, float bottomLeft, float thickness, Color colour, Border border) {
+        return roundedRectangleBorder((float) bounds.getX(), (float) bounds.getY(), (float) bounds.getWidth(), (float) bounds.getHeight(), topLeft, topRight, bottomRight, bottomLeft, thickness, colour, border);
+    }
+
+    /**
+     * Basic coloured rounded rectangle border.
+     * @param bounds bounds of the rectangle
+     * @param radius radius of the rounded rectangle
+     * @param thickness the thickness of the border
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangleBorder(Rectangle bounds, float radius, float thickness, Color colour, Border border) {
+        return roundedRectangleBorder((float) bounds.getX(), (float) bounds.getY(), (float) bounds.getWidth(), (float) bounds.getHeight(), radius, thickness, colour, border);
+    }
+
+    /**
+     * Basic coloured rounded rectangle border.
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param radius radius of the rounded rectangle
+     * @param thickness the thickness of the border
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangleBorder(float x, float y, float width, float height, float radius, float thickness, Color colour, Border border) {
+        return roundedRectangleBorder(x, y, width, height, radius, radius, radius, radius, thickness, colour, border);
+    }
+
+    /**
+     * Basic coloured rounded rectangle border.
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param topLeft radius of the top left corner
+     * @param topRight radius of the top right corner
+     * @param bottomRight radius of the bottom right corner
+     * @param bottomLeft radius of the bottom left corner
+     * @param thickness the thickness of the border
+     * @param colour colour of the rounded rectangle
+     */
+    public NVGU roundedRectangleBorder(float x, float y, float width, float height, float topLeft, float topRight, float bottomRight, float bottomLeft, float thickness, Color colour, Border border) {
+        nvgBeginPath(handle);
+
+        switch (border) {
+            case INSIDE: {
+                x += thickness / 2f;
+                y += thickness / 2f;
+                width -= thickness;
+                height -= thickness;
+                break;
+            }
+
+            case OUTSIDE: {
+                x -= thickness / 2f;
+                y -= thickness / 2f;
+                width += thickness;
+                height += thickness;
+                break;
+            }
+        }
+
+        nvgRoundedRectVarying(handle, x, y, width, height, topLeft, topRight, bottomRight, bottomLeft);
+
+        nvgStrokeWidth(handle, thickness);
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.STROKE);
+        } else {
+            nvgStrokeColor(handle, createAndStoreColour(colour));
+            nvgStroke(handle);
+        }
+
+        nvgClosePath(handle);
+
+        return this;
+    }
+
+    /**
+     * Basic coloured circle.
      * @param x centre x coordinate of the circle
      * @param y centre y coordinate of the circle
      * @param radius radius of the circle
@@ -285,7 +422,7 @@ public class NVGU {
     }
 
     /**
-     * Basic solid-coloured circle border.
+     * Basic coloured circle border.
      * @param x centre x coordinate of the circle
      * @param y centre y coordinate of the circle
      * @param radius radius of the circle
@@ -296,6 +433,179 @@ public class NVGU {
         nvgBeginPath(handle);
 
         nvgCircle(handle, x, y, radius);
+        nvgStrokeWidth(handle, thickness);
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.STROKE);
+        } else {
+            nvgStrokeColor(handle, createAndStoreColour(colour));
+            nvgStroke(handle);
+        }
+
+        nvgClosePath(handle);
+
+        return this;
+    }
+
+
+    /**
+     * Basic coloured right-angled triangle.
+     * @param x centre x coordinate of the circle
+     * @param y centre y coordinate of the circle
+     * @param width width of the triangle
+     * @param height height of the triangle
+     * @param colour colour of the circle
+     * @param corner where the corner is located
+     */
+    public NVGU rightAngledTriangle(float x, float y, float width, float height, Color colour, RightAngledTriangleCorner corner) {
+        nvgBeginPath(handle);
+
+        switch (corner) {
+            case TOP_LEFT: {
+                nvgMoveTo(handle, x, y);
+                nvgLineTo(handle, x + width, y);
+                nvgLineTo(handle, x, y + height);
+                nvgLineTo(handle, x, y);
+                break;
+            }
+
+            case TOP_RIGHT: {
+                nvgMoveTo(handle, x + width, y);
+                nvgLineTo(handle, x, y);
+                nvgLineTo(handle, x + width, y + height);
+                nvgLineTo(handle, x + width, y);
+                break;
+            }
+
+            case BOTTOM_LEFT: {
+                nvgMoveTo(handle, x, y + height);
+                nvgLineTo(handle, x + width, y + height);
+                nvgLineTo(handle, x, y);
+                nvgLineTo(handle, x, y + height);
+                break;
+            }
+
+            case BOTTOM_RIGHT: {
+                nvgMoveTo(handle, x + width, y + height);
+                nvgLineTo(handle, x, y + height);
+                nvgLineTo(handle, x + width, y);
+                nvgLineTo(handle, x + width, y + height);
+                break;
+            }
+        }
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.FILL);
+        } else {
+            nvgFillColor(handle, createAndStoreColour(colour));
+            nvgFill(handle);
+        }
+
+        nvgClosePath(handle);
+
+        return this;
+    }
+
+    /**
+     * Basic coloured right-angled triangle border.
+     * @param x centre x coordinate of the circle
+     * @param y centre y coordinate of the circle
+     * @param width width of the triangle
+     * @param height height of the triangle
+     * @param colour colour of the circle
+     * @param corner where the corner is located
+     */
+    public NVGU rightAngledTriangleBorder(float x, float y, float width, float height, float thickness, Color colour, RightAngledTriangleCorner corner) {
+        nvgBeginPath(handle);
+
+        switch (corner) {
+            case TOP_LEFT: {
+                nvgMoveTo(handle, x, y);
+                nvgLineTo(handle, x + width, y);
+                nvgLineTo(handle, x, y + height);
+                nvgLineTo(handle, x, y);
+                break;
+            }
+
+            case TOP_RIGHT: {
+                nvgMoveTo(handle, x + width, y);
+                nvgLineTo(handle, x, y);
+                nvgLineTo(handle, x + width, y + height);
+                nvgLineTo(handle, x + width, y);
+                break;
+            }
+
+            case BOTTOM_LEFT: {
+                nvgMoveTo(handle, x, y + height);
+                nvgLineTo(handle, x + width, y + height);
+                nvgLineTo(handle, x, y);
+                nvgLineTo(handle, x, y + height);
+                break;
+            }
+
+            case BOTTOM_RIGHT: {
+                nvgMoveTo(handle, x + width, y + height);
+                nvgLineTo(handle, x, y + height);
+                nvgLineTo(handle, x + width, y);
+                nvgLineTo(handle, x + width, y + height);
+                break;
+            }
+        }
+
+        nvgStrokeWidth(handle, thickness);
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.STROKE);
+        } else {
+            nvgStrokeColor(handle, createAndStoreColour(colour));
+            nvgStroke(handle);
+        }
+
+        nvgClosePath(handle);
+
+        return this;
+    }
+
+    /**
+     * Basic filled polygon.
+     * @param points array of points, a point being a float array of length 2
+     * @param colour the colour of the polygon
+     */
+    public NVGU polygon(float[][] points, Color colour) {
+        nvgBeginPath(handle);
+
+        nvgMoveTo(handle, points[0][0], points[0][1]);
+
+        for (int i = 1; i < points.length; i++) {
+            nvgLineTo(handle, points[i][0], points[i][1]);
+        }
+
+        if (colour instanceof NVGUColour) {
+            ((NVGUColour) colour).apply(this, NVGUColour.RenderType.FILL);
+        } else {
+            nvgFillColor(handle, createAndStoreColour(colour));
+            nvgFill(handle);
+        }
+
+        nvgClosePath(handle);
+
+        return this;
+    }
+
+    /**
+     * Basic filled polygon.
+     * @param points array of points, a point being a float array of length 2
+     * @param colour the colour of the polygon
+     */
+    public NVGU polygonBorder(float[][] points, float thickness, Color colour) {
+        nvgBeginPath(handle);
+
+        nvgMoveTo(handle, points[0][0], points[0][1]);
+
+        for (int i = 1; i < points.length; i++) {
+            nvgLineTo(handle, points[i][0], points[i][1]);
+        }
+
         nvgStrokeWidth(handle, thickness);
 
         if (colour instanceof NVGUColour) {
@@ -354,7 +664,7 @@ public class NVGU {
         nvgFontFace(handle, font);
         nvgFontSize(handle, size);
         nvgTextAlign(handle, alignment.getTextAlignment());
-        nvgText(handle, x, y, text);
+        nvgText(handle, x, y + 1, text);
 
         nvgClosePath(handle);
 
@@ -745,6 +1055,16 @@ public class NVGU {
         }
 
         colour.setPaint(nvgRadialGradient(handle, startX, startY, innerRadius, outerRadius, createAndStoreColour(start), createAndStoreColour(end), colour.getPaint()).feather(feather));
+
+        return colour;
+    }
+
+    public NVGUColour texture(String identifier, float x, float y, float width, float height) {
+        NVGUColour colour = new NVGUColour(createAndStorePaint());
+
+        nvgImageSize(handle, textures.get(identifier), new int[]{ (int) width }, new int[]{ (int) height });
+
+        nvgImagePattern(handle, x, y, width, height, 0, textures.get(identifier), 1f, colour.getPaint());
 
         return colour;
     }
