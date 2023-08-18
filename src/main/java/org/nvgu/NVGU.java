@@ -5,7 +5,9 @@ import org.lwjgl.nanovg.NVGColor;
 import org.lwjgl.nanovg.NVGPaint;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
+import org.nvgu.util.LinearGradientDirection;
 import org.nvgu.util.NVGUColour;
+import org.nvgu.util.Alignment;
 
 import java.awt.*;
 import java.io.IOException;
@@ -25,6 +27,28 @@ public class NVGU {
     private long handle = -1;
     private final List<NativeResource> resources = new ArrayList<>();
 
+    private String currentFont = null;
+    private int currentFontSize = -1;
+    private Alignment alignment = Alignment.LEFT_TOP;
+
+    public NVGU create() {
+        if (handle == -1) {
+            this.handle = nvgCreate(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+        }
+
+        return this;
+    }
+
+    /**
+     * Creates a font with the given identifier from the given input stream.
+     * @param identifier what identifier will be used to draw the font
+     * @param fontStream the input stream of the font
+     */
+    public NVGU createFont(String identifier, InputStream fontStream) {
+        nvgCreateFontMem(handle, identifier, getBytes(fontStream, 1024), false);
+        return this;
+    }
+
     /**
      * Destroys the instance of NanoVG
      */
@@ -39,8 +63,6 @@ public class NVGU {
      * @param height the vertical size of the frame in pixels
      */
     public NVGU beginFrame(int width, int height) {
-        checkInitialisedState();
-
         nvgBeginFrame(handle, width, height, 1);
 
         return this;
@@ -68,8 +90,8 @@ public class NVGU {
 
         render.run();
 
-        endFrame();
         freeResources();
+        endFrame();
 
         return this;
     }
@@ -289,6 +311,145 @@ public class NVGU {
     }
 
     /**
+     * Renders the given text at given coordinates.
+     * Uses {@link NVGU#currentFont}, {@link NVGU#currentFontSize} and {@link NVGU#alignment}
+     * for the additional data.
+     * If these aren't set, a {@link NullPointerException} with be thrown.
+     * @param text the text to draw
+     * @param x the x position
+     * @param y the y position
+     * @param colour the colour of the text - will not accept gradients
+     */
+    public NVGU text(String text, float x, float y, Color colour) {
+        return text(text, x, y, colour, this.currentFont, this.currentFontSize, this.alignment);
+    }
+
+    /**
+     * Renders the given text at given coordinates, with alignment {@link Alignment#LEFT_TOP}
+     * @param text the text to draw
+     * @param x the x position
+     * @param y the y position
+     * @param colour the colour of the text - will not accept gradients
+     * @param font what font to use - must have been created using {@link NVGU#createFont(String, InputStream)}
+     * @param size the font size
+     */
+    public NVGU text(String text, float x, float y, Color colour, String font, int size) {
+        return text(text, x, y, colour, font, size, Alignment.LEFT_TOP);
+    }
+
+    /**
+     * Renders the given text at given coordinates
+     * @param text the text to draw
+     * @param x the x position
+     * @param y the y position
+     * @param colour the colour of the text - will not accept gradients
+     * @param font what font to use - must have been created using {@link NVGU#createFont(String, InputStream)}
+     * @param size the font size
+     * @param alignment how the text should be aligned in accordance with the coordinates
+     */
+    public NVGU text(String text, float x, float y, Color colour, String font, int size, Alignment alignment) {
+        nvgBeginPath(handle);
+
+        nvgFillColor(handle, createAndStoreColour(colour));
+        nvgFontFace(handle, font);
+        nvgFontSize(handle, size);
+        nvgTextAlign(handle, alignment.getTextAlignment());
+        nvgText(handle, x, y, text);
+
+        nvgClosePath(handle);
+
+        return this;
+    }
+
+    public String getCurrentFont() {
+        return currentFont;
+    }
+
+    public int getCurrentFontSize() {
+        return currentFontSize;
+    }
+
+    public Alignment getAlignment() {
+        return alignment;
+    }
+
+    /**
+     * Sets the font data for {@link NVGU#text(String, float, float, Color)}
+     * @param font what font to use - must have been created using {@link NVGU#createFont(String, InputStream)}
+     * @param size the size of the font
+     * @param alignment the alignment of the font
+     */
+    public NVGU setFontData(String font, int size, Alignment alignment) {
+        this.currentFont = font;
+        this.currentFontSize = size;
+        this.alignment = alignment;
+
+        return this;
+    }
+
+    /**
+     * Gets the width of the given text.
+     * Uses {@link NVGU#currentFont} and {@link NVGU#currentFontSize}
+     * for the additional data.
+     * If these aren't set, a {@link NullPointerException} with be thrown.
+     * @param text the given text to calculate the width of
+     * @return the width of the text
+     */
+    public float textWidth(String text) {
+        return textWidth(text, currentFont, currentFontSize);
+    }
+
+    /**
+     * Gets the width of the given text.
+     * @param text the given text to calculate the width of
+     * @param font the font to use
+     * @param size the size of the font
+     * @return the width of the text
+     */
+    public float textWidth(String text, String font, int size) {
+        float[] bounds = new float[4];
+
+        save();
+
+        nvgFontFace(handle, font);
+        nvgFontSize(handle, size);
+        nvgTextBounds(handle, 0f, 0f, text, bounds);
+
+        restore();
+
+        return bounds[2];
+    }
+
+    /**
+     * Gets the height of a font.
+     * Uses {@link NVGU#currentFont} and {@link NVGU#currentFontSize}
+     * for the additional data.
+     * If these aren't set, a {@link NullPointerException} with be thrown.
+     * @return the height of the font
+     */
+    public float textHeight() {
+        return textHeight(currentFont, currentFontSize);
+    }
+
+    /**
+     * Gets the height of a font.
+     * @param font the font to use
+     * @param size the font size
+     * @return the height of the font
+     */
+    public float textHeight(String font, int size) {
+        float[] ascender = new float[1];
+        float[] descender = new float[1];
+        float[] height = new float[1];
+
+        nvgFontFace(handle, font);
+        nvgFontSize(handle, size);
+        nvgTextMetrics(handle, ascender, descender, height);
+
+        return height[0];
+    }
+
+    /**
      * Translates subsequent rendering to the given coordinates
      * @param x horizontal coordinate
      * @param y vertical coordinate
@@ -391,7 +552,7 @@ public class NVGU {
      * @param colour the colour to transform into {@link NVGColor}
      */
     public NVGColor createAndStoreColour(Color colour) {
-        NVGColor nvgColour = NVGColor.malloc()
+        NVGColor nvgColour = NVGColor.calloc()
                 .r(colour.getRed() / 255f)
                 .g(colour.getGreen() / 255f)
                 .b(colour.getBlue() / 255f)
@@ -406,7 +567,7 @@ public class NVGU {
      * Creates an instance of {@link NVGPaint}
      */
     public NVGPaint createAndStorePaint() {
-        NVGPaint paint = NVGPaint.malloc();
+        NVGPaint paint = NVGPaint.calloc();
 
         resources.add(paint);
 
@@ -414,10 +575,10 @@ public class NVGU {
     }
 
     /**
-     * Creates a linear gradient in an instance of an {@link NVGUColour}. The position
-     * parameters will most likely be the same as the coordinates of whatever shape you are
-     * drawing, e.g. a rectangle. However, if, for example, you are drawing a string, you
-     * need to put the width of the text etc as parameters.
+     * Creates a linear gradient in an instance of an {@link NVGUColour}.
+     * The position parameters will most likely be the same as the coordinates of whatever shape you are
+     * drawing, e.g. a rectangle.
+     * The feather will be the greatest of either width or height.
      * @param x start x coordinate of the gradient
      * @param y start y coordinate of the gradient
      * @param width width of the gradient
@@ -427,7 +588,25 @@ public class NVGU {
      * @param direction direction of the gradient
      * @return instance of the gradient inside an {@link NVGUColour}
      */
-    public NVGUColour linearGradient(float x, float y, float width, float height, Color start, Color end, GradientDirection direction) {
+    public NVGUColour linearGradient(float x, float y, float width, float height, Color start, Color end, LinearGradientDirection direction) {
+        return linearGradient(x, y, width, height, Math.max(width, height), start, end, direction);
+    }
+
+    /**
+     * Creates a linear gradient in an instance of an {@link NVGUColour}. The position
+     * parameters will most likely be the same as the coordinates of whatever shape you are
+     * drawing, e.g. a rectangle.
+     * @param x start x coordinate of the gradient
+     * @param y start y coordinate of the gradient
+     * @param width width of the gradient
+     * @param height height of the gradient
+     * @param feather the distance for the gradient to apply between the two colours
+     * @param start start colour of the gradient
+     * @param end end colour of the gradient
+     * @param direction direction of the gradient
+     * @return instance of the gradient inside an {@link NVGUColour}
+     */
+    public NVGUColour linearGradient(float x, float y, float width, float height, float feather, Color start, Color end, LinearGradientDirection direction) {
         NVGUColour colour = new NVGUColour(createAndStorePaint());
 
         float startX = x;
@@ -480,26 +659,94 @@ public class NVGU {
                 break;
         }
 
-        nvgLinearGradient(handle, startX, startY, endX, endY, createAndStoreColour(start), createAndStoreColour(end), colour.getPaint());
+        colour.setPaint(nvgLinearGradient(handle, startX, startY, endX, endY, createAndStoreColour(start), createAndStoreColour(end), colour.getPaint()).feather(feather));
 
         return colour;
     }
 
     /**
-     * Creates a linear gradient and stores it in a {@link NVGPaint}
-     * @param startX starting x coordinate of the gradient
-     * @param startY starting y coordinate of the gradient
-     * @param endX ending x coordinate of the gradient
-     * @param endY ending y coordinate of the gradient
-     * @param innerColour colour of the inner gradient
-     * @param outerColour colour of the outer gradient
+     * Creates a radial gradient in an instance of an {@link NVGUColour}.
+     * The position parameters will most likely be the same as the coordinates of whatever shape you are
+     * drawing, e.g. a rectangle.
+     * The feather will be the greatest of either width or height.
+     * @param x start x coordinate of the gradient
+     * @param y start y coordinate of the gradient
+     * @param width width of the gradient
+     * @param height height of the gradient
+     * @param innerRadius the inner radius of the gradient
+     * @param outerRadius the outer radius of the gradient
+     * @param start start colour of the gradient
+     * @param end end colour of the gradient
+     * @param alignment alignment of the gradient
+     * @return instance of the gradient inside an {@link NVGUColour}
      */
-    public NVGPaint createAndStoreLinearGradient(float startX, float startY, float endX, float endY, Color innerColour, Color outerColour) {
-        NVGPaint paint = nvgLinearGradient(handle, startX, startY, endX, endY, createAndStoreColour(innerColour), createAndStoreColour(outerColour), NVGPaint.malloc());
+    public NVGUColour radialGradient(float x, float y, float width, float height, float innerRadius, float outerRadius, Color start, Color end, Alignment alignment) {
+        return radialGradient(x, y, width, height, innerRadius, outerRadius, Math.max(width, height), start, end, alignment);
+    }
 
-        resources.add(paint);
+    /**
+     * Creates a radial gradient in an instance of an {@link NVGUColour}.
+     * The position parameters will most likely be the same as the coordinates of whatever shape you are
+     * drawing, e.g. a rectangle.
+     * @param x start x coordinate of the gradient
+     * @param y start y coordinate of the gradient
+     * @param width width of the gradient
+     * @param height height of the gradient
+     * @param innerRadius the inner radius of the gradient
+     * @param outerRadius the outer radius of the gradient
+     * @param feather the distance for the gradient to apply between the two colours
+     * @param start start colour of the gradient
+     * @param end end colour of the gradient
+     * @param alignment alignment of the gradient
+     * @return instance of the gradient inside an {@link NVGUColour}
+     */
+    public NVGUColour radialGradient(float x, float y, float width, float height, float innerRadius, float outerRadius, float feather, Color start, Color end, Alignment alignment) {
+        NVGUColour colour = new NVGUColour(createAndStorePaint());
 
-        return paint;
+        float startX = x;
+        float startY = y;
+
+        switch (alignment) {
+            case CENTER_TOP:
+                startX = x + width / 2f;
+                break;
+
+            case RIGHT_TOP:
+                startX = x + width;
+                break;
+
+            case LEFT_MIDDLE:
+                startY = y + height / 2f;
+                break;
+
+            case CENTER_MIDDLE:
+                startX = x + width / 2f;
+                startY = y + height / 2f;
+                break;
+
+            case RIGHT_MIDDLE:
+                startX = x + width;
+                startY = y + height / 2f;
+                break;
+
+            case LEFT_BOTTOM:
+                startY = y + height;
+                break;
+
+            case CENTER_BOTTOM:
+                startX = x + width / 2f;
+                startY = y + height;
+                break;
+
+            case RIGHT_BOTTOM:
+                startX = x + width;
+                startY = y + height;
+                break;
+        }
+
+        colour.setPaint(nvgRadialGradient(handle, startX, startY, innerRadius, outerRadius, createAndStoreColour(start), createAndStoreColour(end), colour.getPaint()).feather(feather));
+
+        return colour;
     }
 
     /**
@@ -520,21 +767,14 @@ public class NVGU {
         return handle;
     }
 
-    public enum GradientDirection {
-        LEFT_TO_RIGHT,
-        RIGHT_TO_LEFT,
-        TOP_TO_BOTTOM,
-        BOTTOM_TO_TOP,
-        DIAGONAL_LEFT_TO_RIGHT_UP,
-        DIAGONAL_LEFT_TO_RIGHT_DOWN,
-        DIAGONAL_RIGHT_TO_LEFT_UP,
-        DIAGONAL_RIGHT_TO_LEFT_DOWN
-    }
+    /**
+     * Allows you to execute code without breaking out of a chain of method calls
+     * @param runnable the code to be executed
+     */
+    public NVGU also(Runnable runnable) {
+        runnable.run();
 
-    private void checkInitialisedState() {
-        if (handle == -1) {
-            this.handle = nvgCreate(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
-        }
+        return this;
     }
 
     private ByteBuffer getBytes(InputStream stream, int size) {

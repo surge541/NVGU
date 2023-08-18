@@ -17,9 +17,9 @@ public class Window {
     // The window handle
     private long window;
 
-    public void run(Runnable render) {
+    public void run(Runnable init, Runnable render) {
         init();
-        loop(render);
+        loop(init, render);
 
         // Free the window callbacks and destroy the window
         glfwFreeCallbacks(window);
@@ -46,7 +46,7 @@ public class Window {
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
 
         // Create the window
-        window = glfwCreateWindow(1280, 720, "NVGU Testing", NULL, NULL);
+        window = glfwCreateWindow(600, 300, "NVGU Testing", NULL, NULL);
 
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
@@ -80,6 +80,7 @@ public class Window {
 
         // Make the OpenGL context current
         glfwMakeContextCurrent(window);
+
         // Enable v-sync
         glfwSwapInterval(1);
 
@@ -87,7 +88,7 @@ public class Window {
         glfwShowWindow(window);
     }
 
-    private void loop(Runnable render) {
+    private void loop(Runnable init, Runnable render) {
         // This line is critical for LWJGL's interoperation with GLFW's
         // OpenGL context, or any context that is managed externally.
         // LWJGL detects the context that is current in the current thread,
@@ -97,6 +98,8 @@ public class Window {
 
         // Set the clear color
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+        init.run();
 
         // Run the rendering loop until the user has attempted to close
         // the window or has pressed the ESCAPE key.

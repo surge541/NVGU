@@ -54,6 +54,7 @@ public class NVGUColour extends Color {
             case FILL: {
                 nvgFillColor(instance.getHandle(), instance.createAndStoreColour(this));
                 nvgFill(instance.getHandle());
+
                 break;
             }
 
