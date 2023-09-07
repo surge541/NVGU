@@ -156,6 +156,18 @@ public class NVGU {
     }
 
     /**
+     * Textured rectangle
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param texture the texture identifier to use
+     */
+    public NVGU texturedRectangle(float x, float y, float width, float height, String texture) {
+        return rectangle(x, y, width, height, texture(texture, x, y, width, height));
+    }
+
+    /**
      * Basic coloured rectangle.
      * @param rectangle bounds of the rectangle
      * @param colour colour of the rectangle
@@ -187,6 +199,18 @@ public class NVGU {
         nvgClosePath(handle);
 
         return this;
+    }
+
+    /**
+     * Textured rectangle border
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param texture the texture identifier to use
+     */
+    public NVGU texturedRectangleBorder(float x, float y, float width, float height, float thickness, String texture, Border border) {
+        return rectangleBorder(x, y, width, height, thickness, texture(texture, x, y, width, height), border);
     }
 
     /**
@@ -241,6 +265,35 @@ public class NVGU {
         nvgClosePath(handle);
 
         return this;
+    }
+
+    /**
+     * Textured rounded rectangle
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param topLeft radius of the top left corner
+     * @param topRight radius of the top right corner
+     * @param bottomRight radius of the bottom right corner
+     * @param bottomLeft radius of the bottom left corner
+     * @param texture the texture identifier to use
+     */
+    public NVGU texturedRoundedRectangle(float x, float y, float width, float height, float topLeft, float topRight, float bottomRight, float bottomLeft, String texture) {
+        return roundedRectangle(x, y, width, height, topLeft, topRight, bottomRight, bottomLeft, texture(texture, x, y, width, height));
+    }
+
+    /**
+     * Textured rounded rectangle
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param radius radius of the rounded rectangle
+     * @param texture the texture identifier to use
+     */
+    public NVGU texturedRoundedRectangle(float x, float y, float width, float height, float radius, String texture) {
+        return roundedRectangle(x, y, width, height, radius, texture(texture, x, y, width, height));
     }
 
     /**
@@ -306,6 +359,37 @@ public class NVGU {
         nvgClosePath(handle);
 
         return this;
+    }
+
+    /**
+     * Textured rounded rectangle
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param topLeft radius of the top left corner
+     * @param topRight radius of the top right corner
+     * @param bottomRight radius of the bottom right corner
+     * @param bottomLeft radius of the bottom left corner
+     * @param thickness thickness of the border
+     * @param texture the texture identifier to use
+     * @param border the border type to use
+     */
+    public NVGU texturedRounddeRectangleBorder(float x, float y, float width, float height, float topLeft, float topRight, float bottomRight, float bottomLeft, float thickness, String texture, Border border) {
+        return roundedRectangleBorder(x, y, width, height, topLeft, topRight, bottomRight, bottomLeft, thickness, texture(texture, x, y, width, height), border);
+    }
+
+    /**
+     * Textured rounded rectangle
+     * @param x left coordinate
+     * @param y top coordinate
+     * @param width width of the rectangle
+     * @param height height of the rectangle
+     * @param radius radius of the rounded rectangle
+     * @param texture the texture identifier to use
+     */
+    public NVGU texturedRounddeRectangleBorder(float x, float y, float width, float height, float radius, float thickness, String texture, Border border) {
+        return roundedRectangleBorder(x, y, width, height, radius, thickness, texture(texture, x, y, width, height), border);
     }
 
     /**
@@ -446,7 +530,6 @@ public class NVGU {
 
         return this;
     }
-
 
     /**
      * Basic coloured right-angled triangle.

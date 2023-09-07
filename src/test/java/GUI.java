@@ -44,7 +44,7 @@ public class GUI {
                 animationB.setState(false);
             }
 
-            nvgu.roundedRectangle(0, 0, window.getWidth(), window.getHeight(), 20, nvgu.texture("mountains", 0, 0, window.getWidth(), window.getHeight()))
+            nvgu.texturedRoundedRectangle(0, 0, window.getWidth(), window.getHeight(), 20, "mountains")
                     .roundedRectangle(0, 0, window.getWidth(), window.getHeight(), 20, new Color(0, 0, 0, 150))
                     .roundedRectangle(0, 0, window.getWidth(), window.getHeight(), 20, nvgu.radialGradient(0, 0, window.getWidth(), window.getHeight(), 1000, 0, 500, new Color(0, 0, 0, 0), Color.BLACK, Alignment.CENTER_MIDDLE))
                     .roundedRectangleBorder(0, 0, window.getWidth(), window.getHeight(), 20, 3, nvgu.linearGradient(0, 0, window.getWidth(), window.getHeight(), lerpColour(Color.CYAN, Color.MAGENTA, animationA.getAnimationFactor()), lerpColour(Color.MAGENTA, Color.CYAN, animationB.getAnimationFactor()), LinearGradientDirection.DIAGONAL_LEFT_TO_RIGHT_UP), Border.INSIDE)
