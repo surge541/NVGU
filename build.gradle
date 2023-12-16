@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-project.ext.lwjglVersion = "3.3.2"
+project.ext.lwjglVersion = "3.3.3"
 project.ext.lwjglNatives = "natives-windows"
 
 group = 'org.nvgu'
@@ -33,5 +33,4 @@ dependencies {
     }
 
     testImplementation("com.github.Wolfsurge:JavaAnimationSystem:1.11")
-
 }
