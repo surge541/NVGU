@@ -31,6 +31,8 @@ public class NVGU {
     private int currentFontSize = -1;
     private Alignment alignment = Alignment.LEFT_TOP;
 
+    // retain all buffers to prevent them being GCed
+    private final List<ByteBuffer> bufferRegistry = new ArrayList<>();
     private final Map<String, Integer> textures = new HashMap<>();
 
     /**
@@ -50,7 +52,10 @@ public class NVGU {
      * @param fontStream the input stream of the font
      */
     public NVGU createFont(String identifier, InputStream fontStream) {
-        nvgCreateFontMem(handle, identifier, getBytes(fontStream, 1024), false);
+        ByteBuffer buffer = getBytes(fontStream, 1024);
+        nvgCreateFontMem(handle, identifier, buffer, false);
+        bufferRegistry.add(buffer);
+
         return this;
     }
 
@@ -84,6 +89,10 @@ public class NVGU {
         textures.forEach((identifier, imageHandle) -> nvgDeleteImage(handle, imageHandle));
 
         nvgDelete(handle);
+
+        bufferRegistry.clear();
+        textures.clear();
+
         handle = -1;
     }
 
@@ -113,9 +122,6 @@ public class NVGU {
      * @param render what will be rendered in the frame
      */
     public NVGU frame(int width, int height, Runnable render) {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
         beginFrame(width, height);
 
         render.run();
