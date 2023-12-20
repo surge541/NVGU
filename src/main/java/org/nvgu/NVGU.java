@@ -1148,6 +1148,15 @@ public class NVGU {
         return colour;
     }
 
+    /**
+     * Creates a texture (based on the given identifier) at the given coordinates
+     * @param identifier the key used to identify the texture
+     * @param x x coordinate of the rectangle
+     * @param y y coordinate of the rectangle
+     * @param width width of the texture
+     * @param height height of the texture
+     * @return the texture as a {@link NVGUColour}
+     */
     public NVGUColour texture(String identifier, float x, float y, float width, float height) {
         NVGUColour colour = new NVGUColour(createAndStorePaint());
 
@@ -1156,6 +1165,44 @@ public class NVGU {
         nvgImagePattern(handle, x, y, width, height, 0, textures.get(identifier), 1f, colour.getPaint());
 
         return colour;
+    }
+
+    /**
+     * Creates a scissor box with the specified bounds
+     * @param x x coordinate
+     * @param y y coordinate
+     * @param width width of the box
+     * @param height height of the box
+     */
+    public NVGU pushScissor(float x, float y, float width, float height) {
+        nvgSave(handle);
+        nvgIntersectScissor(handle, x, y, width, height);
+        return this;
+    }
+
+    /**
+     * Essentially just a wrapper around {@link #save()}, but should be useful for
+     * readability
+     */
+    public NVGU popScissor() {
+        nvgRestore(handle);
+        return this;
+    }
+
+    /**
+     * Creates a scope for a scissor box with the specified bounds
+     * @param x x coordinate of the box
+     * @param y y coordinate of the box
+     * @param width width of the box
+     * @param height height of the box
+     * @param block the scoped code
+     */
+    public NVGU scissor(float x, float y, float width, float height, Runnable block) {
+        pushScissor(x, y, width, height);
+        block.run();
+        popScissor();
+
+        return this;
     }
 
     /**
