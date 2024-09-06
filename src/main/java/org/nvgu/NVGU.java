@@ -76,7 +76,10 @@ public class NVGU {
      */
     public NVGU createTexture(String identifier, InputStream texture, int flags) {
         if (!textures.containsKey(identifier)) {
-            textures.put(identifier, nvgCreateImageMem(handle, flags, getBytes(texture, 512)));
+            ByteBuffer buffer = getBytes(texture, 512);
+            bufferRegistry.add(buffer);
+
+            textures.put(identifier, nvgCreateImageMem(handle, flags, buffer));
         }
 
         return this;
